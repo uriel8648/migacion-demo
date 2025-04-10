@@ -1,0 +1,54 @@
+<form (ngSubmit)="saveTodo()" #todoForm="ngForm" class="todo-form">
+  <div class="form-group">
+    <label for="title">Title</label>
+    <input 
+      type="text" 
+      id="title" 
+      name="title" 
+      [(ngModel)]="newTodo.title" 
+      required 
+      class="form-control"
+      placeholder="Enter todo title"
+      #titleInput="ngModel">
+    <div *ngIf="titleInput.invalid && (titleInput.dirty || titleInput.touched)" class="text-danger">
+      <small *ngIf="titleInput.errors?.['required']">Title is required</small>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="description">Description</label>
+    <textarea 
+      id="description" 
+      name="description" 
+      [(ngModel)]="newTodo.description" 
+      class="form-control"
+      placeholder="Enter description"
+      rows="3"></textarea>
+  </div>
+
+  <div class="form-group form-check">
+    <input 
+      type="checkbox" 
+      id="completed" 
+      name="completed" 
+      [(ngModel)]="newTodo.completed" 
+      class="form-check-input">
+    <label class="form-check-label" for="completed">Completed</label>
+  </div>
+
+  <div class="form-actions">
+    <button 
+      type="submit" 
+      class="btn btn-primary" 
+      [disabled]="todoForm.invalid">
+      {{ editMode ? 'Update' : 'Create' }} Todo
+    </button>
+    <button 
+      *ngIf="editMode" 
+      type="button" 
+      class="btn btn-secondary ms-2" 
+      (click)="cancelEdit()">
+      Cancel
+    </button>
+  </div>
+</form>
