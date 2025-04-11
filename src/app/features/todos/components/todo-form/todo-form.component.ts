@@ -58,58 +58,6 @@ export class TodoFormComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Creates a new todo item
-   */
-  createTodo(): void {
-    if (this.todoForm.invalid) {
-      return;
-    }
-
-    const newTodo: Todo = this.todoForm.value;
-    
-    this.todoService.createTodo(newTodo)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (createdTodo: Todo) => {
-          this.todoCreated.emit(createdTodo);
-          this.resetForm();
-        },
-        error: (error) => {
-          console.error('Error creating todo:', error);
-          alert('Failed to create todo. Check console for details.');
-        }
-      });
-  }
-
-  /**
-   * Updates an existing todo item
-   */
-  updateTodo(): void {
-    if (this.todoForm.invalid) {
-      return;
-    }
-
-    const todoToUpdate: Todo = this.todoForm.value;
-    
-    if (!todoToUpdate.id) {
-      console.error('Cannot update todo without ID');
-      return;
-    }
-
-    this.todoService.updateTodo(todoToUpdate)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (updatedTodo: Todo) => {
-          this.todoUpdated.emit({ todo: updatedTodo, index: this.editIndex });
-          this.resetForm();
-        },
-        error: (error) => {
-          console.error('Error updating todo:', error);
-          alert('Failed to update todo. Check console for details.');
-        }
-      });
-  }
 
   /**
    * Sets up the form for editing an existing todo
@@ -161,12 +109,25 @@ export class TodoFormComponent implements OnInit, OnDestroy {
       });
       return;
     }
+
+    const todoData: Todo = this.todoForm.value;
     
-    if (this.editMode) {
-      this.updateTodo();
-    } else {
-      this.createTodo();
-    }
+    this.todoService.saveTodo(todoData)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (savedTodo: Todo) => {
+          if (this.editMode) {
+            this.todoUpdated.emit({ todo: savedTodo, index: this.editIndex });
+          } else {
+            this.todoCreated.emit(savedTodo);
+          }
+          this.resetForm();
+        },
+        error: (error) => {
+          console.error('Error saving todo:', error);
+          alert('Failed to save todo. Check console for details.');
+        }
+      });
   }
   
   /**

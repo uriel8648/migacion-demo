@@ -33,7 +33,7 @@ export class AppComponent implements OnInit {
   loading = false;
   
   // API endpoint URL - would typically come from environment config
-  private readonly apiUrl = '/todo/todos';
+  private readonly apiUrl = '/todo/api/todos';
   
   /**
    * Constructor with Angular dependency injection
@@ -44,7 +44,6 @@ export class AppComponent implements OnInit {
    * Lifecycle hook that initializes the component
    */
   ngOnInit(): void {
-    this.loadTodos();
   }
   
   /**
