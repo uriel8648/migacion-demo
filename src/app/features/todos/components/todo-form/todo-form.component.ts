@@ -1,9 +1,11 @@
-import { Component, OnInit, Output, EventEmitter, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Router } from '@angular/router';
+import { EMPTY, Subject } from 'rxjs';
+import { catchError, finalize, takeUntil } from 'rxjs/operators';
 import { Todo } from '../../models/todo.model';
 import { TodoService } from '../../../../core/services/todo.service';
+
 
 @Component({
   selector: 'app-todo-form',
@@ -11,44 +13,74 @@ import { TodoService } from '../../../../core/services/todo.service';
   styleUrls: ['./todo-form.component.scss']
 })
 export class TodoFormComponent implements OnInit, OnDestroy {
-  // Form group for reactive form handling
-  todoForm!: FormGroup;
+
+
+  todos: Todo[] = [];
   
+  // Model for new/edited todo
   newTodo: Todo = {
     title: '',
-    completed: false,
-    description: ''
+    description: '',
+    completed: false
   };
-  // Editing state
+  
+  // Flags for edit mode
   editMode = false;
   editIndex = -1;
+
+  // Loading state
+  loading = false;
+  /**
+   * Loads all todos from the API
+   */
+  todoForm!: FormGroup;
   
-  // Events to communicate with parent component
   @Output() todoCreated = new EventEmitter<Todo>();
   @Output() todoUpdated = new EventEmitter<{ todo: Todo, index: number }>();
-  @Output() formCancelled = new EventEmitter<void>();
+    @Output() formCancelled = new EventEmitter<void>();
   
-  // Subject for unsubscribing from observables when component is destroyed
   private destroy$ = new Subject<void>();
 
   constructor(
     private todoService: TodoService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
     this.initForm();
+    
+    // First try getting state from navigation
+    const navigation = this.router.getCurrentNavigation();
+    let state = navigation?.extras?.state as { todo?: Todo, editMode?: boolean };
+
+    // If no state from navigation, check history state
+    if (!state?.todo) {
+      state = history.state as { todo?: Todo, editMode?: boolean };
+    }
+
+    if (state?.todo) {
+      console.log('Received todo for editing:', state.todo);
+      this.editMode = !!state.editMode;
+      this.newTodo = { ...state.todo };
+      
+      // Ensure form is ready before patching values
+      setTimeout(() => {
+        this.todoForm.patchValue({
+          title: this.newTodo.title,
+          description: this.newTodo.description,
+          completed: this.newTodo.completed
+        });
+        console.log('Form patched with values:', this.todoForm.value);
+      });
+    }
   }
 
   ngOnDestroy(): void {
-    // Clean up subscriptions to prevent memory leaks
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  /**
-   * Initialize the reactive form
-   */
   private initForm(): void {
     this.todoForm = this.fb.group({
       id: [null],
@@ -58,13 +90,7 @@ export class TodoFormComponent implements OnInit, OnDestroy {
     });
   }
 
-
-  /**
-   * Sets up the form for editing an existing todo
-   * @param todo The todo to edit
-   * @param index The index of the todo in the list
-   */
-  editTodo(todo: Todo, index: number): void {
+  /*editTodo(todo: Todo, index: number): void {
     this.todoForm.patchValue({
       id: todo.id,
       title: todo.title,
@@ -73,19 +99,18 @@ export class TodoFormComponent implements OnInit, OnDestroy {
     });
     this.editMode = true;
     this.editIndex = index;
+  }*/
+  editTodo(todo: Todo, index: number): void {
+    this.newTodo = { ...todo };
+    this.editMode = true;
+    this.editIndex = index;
   }
 
-  /**
-   * Cancels the current edit operation
-   */
   cancelEdit(): void {
     this.resetForm();
-    this.formCancelled.emit();
+    this.router.navigate(['/todo']);
   }
 
-  /**
-   * Resets the form to its initial state
-   */
   resetForm(): void {
     this.todoForm.reset({
       id: null,
@@ -97,44 +122,43 @@ export class TodoFormComponent implements OnInit, OnDestroy {
     this.editIndex = -1;
   }
 
-  /**
-   * Saves a todo (creates or updates based on edit mode)
-   */
   saveTodo(): void {
-    if (this.todoForm.invalid) {
-      // Mark form controls as touched to trigger validation messages
-      Object.keys(this.todoForm.controls).forEach(key => {
-        const control = this.todoForm.get(key);
-        control?.markAsTouched();
-      });
+    if (!this.newTodo.title) {
+      alert('Title is required!');
       return;
     }
 
-    const todoData: Todo = this.todoForm.value;
-    
-    this.todoService.saveTodo(todoData)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (savedTodo: Todo) => {
-          if (this.editMode) {
-            this.todoUpdated.emit({ todo: savedTodo, index: this.editIndex });
-          } else {
-            this.todoCreated.emit(savedTodo);
-          }
-          this.resetForm();
-        },
-        error: (error) => {
+    this.loading = true;
+    this.todoService.saveTodo(this.newTodo)
+      .pipe(
+        finalize(() => this.loading = false),
+        catchError(error => {
           console.error('Error saving todo:', error);
           alert('Failed to save todo. Check console for details.');
+          return EMPTY;
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          if (this.editMode) {
+            // Update existing todo
+            if (this.editIndex !== -1) {
+              this.todos[this.editIndex] = response;
+            }
+          } else {
+            // Add new todo
+            this.todos.push(response);
+          }
+          this.resetForm();
+          this.router.navigate(['/todo']);
         }
       });
   }
-  
-  /**
-   * Helper method to check if a form control is invalid and touched
-   * @param controlName The name of the control to check
-   * @returns Boolean indicating if the control is invalid and touched
-   */
+
+  returnhome(){
+    this.router.navigate(['/']);
+  }
+
   isControlInvalid(controlName: string): boolean {
     const control = this.todoForm.get(controlName);
     return !!control && control.invalid && (control.dirty || control.touched);

@@ -1,4 +1,7 @@
+
+
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, EMPTY } from 'rxjs';
 import { Todo } from '../../models/todo.model';
@@ -13,22 +16,15 @@ import { catchError, finalize } from 'rxjs/operators';
 export class TodoListComponent implements OnInit {
   // Collection of todos
   todos: Todo[] = [];
-  
-  // Model for new/edited todo
-  newTodo: Todo = {
-    title: '',
-    description: '',
-    completed: false
-  };
-  
-  // Flags for edit mode
-  editMode = false;
-  editIndex = -1;
+
   
   // Loading state
   loading = false;
 
-  constructor(private todoService: TodoService) {}
+  constructor(
+    private todoService: TodoService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.loadTodos();
@@ -56,38 +52,25 @@ export class TodoListComponent implements OnInit {
   }
 
   /**
-   * Saves a todo (creates or updates)
+   * Navigates to the todo form for creating a new todo
    */
-  saveTodo(): void {
-    if (!this.newTodo.title) {
-      alert('Title is required!');
-      return;
-    }
+  addTodo(): void {
+    this.router.navigate(['/todo-form']);
+  }
 
-    this.loading = true;
-    this.todoService.saveTodo(this.newTodo)
-      .pipe(
-        finalize(() => this.loading = false),
-        catchError(error => {
-          console.error('Error saving todo:', error);
-          alert('Failed to save todo. Check console for details.');
-          return EMPTY;
-        })
-      )
-      .subscribe({
-        next: (response) => {
-          if (this.editMode) {
-            // Update existing todo
-            if (this.editIndex !== -1) {
-              this.todos[this.editIndex] = response;
-            }
-          } else {
-            // Add new todo
-            this.todos.push(response);
-          }
-          this.resetForm();
-        }
-      });
+  /**
+   * Navigates to the todo form for editing an existing todo
+   * @param todo The todo to edit
+   */
+  editTodo(todo: Todo, index: number): void {
+    console.log('Editing todo:', todo);
+    this.router.navigate(['/todo-form'], { 
+      state: { todo: {...todo}, editMode: true },
+      replaceUrl: true
+    }).then(() => {
+      // Force state to be kept even if page is refreshed
+      history.replaceState({ todo: {...todo}, editMode: true }, '');
+    });
   }
 
   /**
@@ -146,36 +129,7 @@ export class TodoListComponent implements OnInit {
         }
       });
   }
-
-  /**
-   * Sets up the form for editing a todo
-   * @param todo The todo to edit
-   * @param index The index of the todo in the array
-   */
-  editTodo(todo: Todo, index: number): void {
-    this.newTodo = { ...todo };
-    this.editMode = true;
-    this.editIndex = index;
-  }
-
-  /**
-   * Cancels the current edit operation
-   */
-  cancelEdit(): void {
-    this.resetForm();
-  }
-
-  /**
-   * Resets the form to its initial state
-   */
-  resetForm(): void {
-    this.newTodo = {
-      title: '',
-      description: '',
-      completed: false
-    };
-    this.editMode = false;
-    this.editIndex = -1;
-  }
-
+ 
+  
 }
+
