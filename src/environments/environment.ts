@@ -37,20 +37,20 @@ export interface Environment {
 export const environment: Environment = {
   production: false,
   
-  // API endpoints based on the Spring Boot REST controller paths
+  // API endpoints configuration
   apiUrl: {
-    // Base URL for the Todo REST API
-    base: '/api',
+    // Base URL for the API
+    base: '',
     
-    // Todo specific endpoints
+    // Todo endpoints matching Java controller
     todos: {
-      base: '/api/todos',
-      getAll: '/api/todos',
-      getById: '/api/todos/', // append ID when calling
-      create: '/api/todos',
-      update: '/api/todos/', // append ID when calling
-      delete: '/api/todos/', // append ID when calling
-      toggle: '/api/todos/' // append ID + '/toggle' when calling
+      base: '/todos',
+      getAll: '/todos',
+      getById: '/todos/', // append ID when calling
+      create: '/todos',
+      update: '/todos/', // append ID when calling
+      delete: '/todos/', // append ID + '/delete' when calling
+      toggle: '/todos/' // append ID + '/toggle' when calling
     }
   },
   

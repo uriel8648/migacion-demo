@@ -56,62 +56,36 @@ export class TodoListComponent implements OnInit {
   }
 
   /**
-   * Creates a new todo
+   * Saves a todo (creates or updates)
    */
-  createTodo(): void {
+  saveTodo(): void {
     if (!this.newTodo.title) {
       alert('Title is required!');
       return;
     }
 
     this.loading = true;
-    this.todoService.createTodo(this.newTodo)
+    this.todoService.saveTodo(this.newTodo)
       .pipe(
         finalize(() => this.loading = false),
         catchError(error => {
-          console.error('Error creating todo:', error);
-          alert('Failed to create todo. Check console for details.');
+          console.error('Error saving todo:', error);
+          alert('Failed to save todo. Check console for details.');
           return EMPTY;
         })
       )
       .subscribe({
         next: (response) => {
-          this.todos.push(response);
-          this.resetForm();
-        }
-      });
-  }
-
-  /**
-   * Updates an existing todo
-   */
-  updateTodo(): void {
-    if (!this.newTodo.title) {
-      alert('Title is required!');
-      return;
-    }
-
-    if (this.newTodo.id === undefined) {
-      console.error('Cannot update todo without ID');
-      return;
-    }
-
-    this.loading = true;
-    this.todoService.updateTodo(this.newTodo)
-      .pipe(
-        finalize(() => this.loading = false),
-        catchError(error => {
-          console.error('Error updating todo:', error);
-          alert('Failed to update todo. Check console for details.');
-          return EMPTY;
-        })
-      )
-      .subscribe({
-        next: (response) => {
-          if (this.editIndex !== -1) {
-            this.todos[this.editIndex] = response;
-            this.resetForm();
+          if (this.editMode) {
+            // Update existing todo
+            if (this.editIndex !== -1) {
+              this.todos[this.editIndex] = response;
+            }
+          } else {
+            // Add new todo
+            this.todos.push(response);
           }
+          this.resetForm();
         }
       });
   }
@@ -155,7 +129,7 @@ export class TodoListComponent implements OnInit {
     todo.completed = !todo.completed;
 
     this.loading = true;
-    this.todoService.toggleTodoStatus(todo)
+    this.todoService.toggleTodoStatus(todo.id)
       .pipe(
         finalize(() => this.loading = false),
         catchError(error => {
@@ -204,14 +178,4 @@ export class TodoListComponent implements OnInit {
     this.editIndex = -1;
   }
 
-  /**
-   * Saves a todo (creates or updates)
-   */
-  saveTodo(): void {
-    if (this.editMode) {
-      this.updateTodo();
-    } else {
-      this.createTodo();
-    }
-  }
 }
