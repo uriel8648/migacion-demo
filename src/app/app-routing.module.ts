@@ -1,12 +1,3 @@
-/**
- * PLACEHOLDER FILE
- *
- * This file was generated as a placeholder because the following source files were not found:
- * - N/A
- *
- * Please locate the source files and re-run the migration or manually create this file.
- */
-
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterModule, Routes } from '@angular/router';
@@ -14,13 +5,13 @@ import { TodoDetailComponent } from './features/todos/components/todo-detail/tod
 import { AppComponent } from './app.component';
 import { TodoListComponent } from './features/todos/components/todo-list/todo-list.component';
 import { TodoItemComponent } from './features/todos/components/todo-item/todo-item.component';
-
-
+import { TodoFormComponent } from './features/todos/components/todo-form/todo-form.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/todo', pathMatch: 'full' },
   { path: 'todo', component: TodoListComponent },
-  { path: 'todo/:id', component: TodoDetailComponent },
+ { path: 'todo/:id', component: TodoDetailComponent },
+  { path: 'todo-form', component: TodoFormComponent },
   { path: '**', redirectTo: '/todo' }
 ];
 
